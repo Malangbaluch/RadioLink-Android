@@ -258,9 +258,11 @@ class MainActivity : ComponentActivity() {
             if (isConnected) return@requestConnectionInfo
             isConnected = true
             transport?.close()
+            isChatReady = false
             val link = LocalChatTransport(
                 onStatus = { text -> runOnUiThread { status = text } },
-                onMessage = { text -> runOnUiThread { chatLog = (chatLog + "\nدریافتی: " + text).trim() } }
+                onMessage = { text -> runOnUiThread { chatLog = (chatLog + "\nدریافتی: " + text).trim() } },
+                onReady = { runOnUiThread { isChatReady = true } }
             )
             transport = link
             if (info.isGroupOwner) {
