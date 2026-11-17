@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
     private var isWifiP2pEnabled by mutableStateOf(false)
     private var isDiscovering by mutableStateOf(false)
     private var isConnected by mutableStateOf(false)
+    private var isChatReady by mutableStateOf(false)
     private var messageDraft by mutableStateOf("")
     private var chatLog by mutableStateOf("")
 
@@ -89,6 +90,7 @@ class MainActivity : ComponentActivity() {
                         requestConnectionInfo()
                     } else {
                         isConnected = false
+                        isChatReady = false
                         transport?.close()
                         transport = null
                         status = "اتصال Wi-Fi Direct برقرار نیست."
@@ -105,6 +107,7 @@ class MainActivity : ComponentActivity() {
             channel = null
             isDiscovering = false
             isConnected = false
+            isChatReady = false
             transport?.close()
             transport = null
             status = "ارتباط داخلی Wi-Fi Direct قطع شد؛ برنامه را دوباره باز کن."
@@ -120,6 +123,7 @@ class MainActivity : ComponentActivity() {
                     wifiP2pEnabled = isWifiP2pEnabled,
                     discovering = isDiscovering,
                     connected = isConnected,
+                    chatReady = isChatReady,
                     messageDraft = messageDraft,
                     chatLog = chatLog,
                     onSelectPeer = { selectedAddress = it },
@@ -296,6 +300,7 @@ private fun RadioLinkScreen(
     wifiP2pEnabled: Boolean,
     discovering: Boolean,
     connected: Boolean,
+    chatReady: Boolean,
     messageDraft: String,
     chatLog: String,
     onSelectPeer: (String) -> Unit,
@@ -354,15 +359,15 @@ private fun RadioLinkScreen(
         ) { Text("اتصال به گوشی انتخاب‌شده") }
 
         HorizontalDivider()
-        Text("آزمایش پیام متنی", style = MaterialTheme.typography.titleMedium)
+        Text(if (chatReady) "کانال پیام آماده است" else "آزمایش پیام متنی", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = messageDraft,
             onValueChange = onMessageChange,
-            enabled = connected,
+            enabled = chatReady,
             label = { Text("پیام آزمایشی") },
             modifier = Modifier.fillMaxWidth()
         )
-        Button(onClick = onSend, enabled = connected && messageDraft.isNotBlank(),
+        Button(onClick = onSend, enabled = chatReady && messageDraft.isNotBlank(),
             modifier = Modifier.fillMaxWidth()) { Text("ارسال پیام") }
         if (chatLog.isNotBlank()) {
             Text(chatLog, modifier = Modifier.fillMaxWidth())
