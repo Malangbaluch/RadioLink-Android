@@ -2,6 +2,7 @@ package org.radiolink.android
 
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.io.IOException
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.InetSocketAddress
@@ -21,6 +22,7 @@ class LocalChatTransport(
     companion object {
         private const val PORT = 8988
         private const val CONNECT_TIMEOUT_MS = 2_000
+    private const val MAX_MESSAGE_CHARS = 4_096
     }
 
     private val executor = Executors.newCachedThreadPool()
@@ -42,6 +44,8 @@ class LocalChatTransport(
                     client.close()
                     return@execute
                 }
+                try { server.close() } catch (_: Exception) {}
+                serverSocket = null
                 attach(client)
             } catch (error: Exception) {
                 if (!closed) postStatus("راه‌اندازی میزبان ناموفق بود: ${error.localizedMessage ?: "خطای شبکه"}")
@@ -72,6 +76,7 @@ class LocalChatTransport(
     private fun attach(client: Socket) {
         socket = client
         client.tcpNoDelay = true
+        client.keepAlive = true
         writer = PrintWriter(OutputStreamWriter(client.getOutputStream(), Charsets.UTF_8), true)
         onReady()
         postStatus("اتصال شبکه‌ای برقرار شد؛ پیام آزمایشی بفرست.")
@@ -79,7 +84,7 @@ class LocalChatTransport(
             try {
                 val reader = BufferedReader(InputStreamReader(client.getInputStream(), Charsets.UTF_8))
                 while (!closed && !client.isClosed) {
-                    val line = reader.readLine() ?: break
+                    val line = readBoundedLine(reader) ?: break
                     onMessage(line)
                 }
                 if (!closed) postStatus("ارتباط با گوشی مقابل قطع شد.")
@@ -89,11 +94,27 @@ class LocalChatTransport(
         }
     }
 
+    @Synchronized
     fun send(message: String): Boolean {
         val output = writer ?: return false
         if (message.isBlank() || closed) return false
-        output.println(message.trim())
+        val safeMessage = message.trim().replace('\r', ' ').replace('\n', ' ')
+        if (safeMessage.length > MAX_MESSAGE_CHARS) return false
+        output.println(safeMessage)
         return !output.checkError()
+    }
+
+    private fun readBoundedLine(reader: BufferedReader): String? {
+        val result = StringBuilder()
+        while (true) {
+            val next = reader.read()
+            if (next == -1) return if (result.isEmpty()) null else result.toString()
+            if (next == '\n'.code) return result.toString().removeSuffix("\r")
+            if (result.length >= MAX_MESSAGE_CHARS) {
+                throw IOException("Incoming message exceeds the allowed size")
+            }
+            result.append(next.toChar())
+        }
     }
 
     private fun postStatus(message: String) {
