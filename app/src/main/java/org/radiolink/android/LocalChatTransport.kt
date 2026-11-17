@@ -2,6 +2,7 @@ package org.radiolink.android
 
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -70,7 +71,7 @@ class LocalChatTransport(
     private fun attach(client: Socket) {
         socket = client
         client.tcpNoDelay = true
-        writer = PrintWriter(client.getOutputStream(), true, Charsets.UTF_8)
+        writer = PrintWriter(OutputStreamWriter(client.getOutputStream(), Charsets.UTF_8), true)
         postStatus("اتصال شبکه‌ای برقرار شد؛ پیام آزمایشی بفرست.")
         executor.execute {
             try {
