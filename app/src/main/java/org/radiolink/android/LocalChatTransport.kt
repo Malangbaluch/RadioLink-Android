@@ -21,8 +21,8 @@ class LocalChatTransport(
 ) {
     companion object {
         private const val PORT = 8988
-        private const val CONNECT_TIMEOUT_MS = 2_000
-    private const val MAX_MESSAGE_CHARS = 4_096
+            private const val CONNECT_TIMEOUT_MS = 2_000
+        private const val MAX_MESSAGE_CHARS = 4_096
     }
 
     private val executor = Executors.newCachedThreadPool()
