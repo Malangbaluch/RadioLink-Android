@@ -15,7 +15,8 @@ import java.util.concurrent.Executors
  */
 class LocalChatTransport(
     private val onStatus: (String) -> Unit,
-    private val onMessage: (String) -> Unit
+    private val onMessage: (String) -> Unit,
+    private val onReady: () -> Unit
 ) {
     companion object {
         private const val PORT = 8988
@@ -72,6 +73,7 @@ class LocalChatTransport(
         socket = client
         client.tcpNoDelay = true
         writer = PrintWriter(OutputStreamWriter(client.getOutputStream(), Charsets.UTF_8), true)
+        onReady()
         postStatus("اتصال شبکه‌ای برقرار شد؛ پیام آزمایشی بفرست.")
         executor.execute {
             try {
